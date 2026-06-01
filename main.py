@@ -1316,6 +1316,9 @@ ACTIVE
                 # RE-ENTRY COOLDOWN
                 # =================================================
 
+                if last_exit_time is None:
+                    last_exit_time = {}
+
                 if stock in last_exit_time:
 
                     cooldown = time.time() - last_exit_time[stock]
