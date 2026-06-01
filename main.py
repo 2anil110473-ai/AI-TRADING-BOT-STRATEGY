@@ -765,6 +765,14 @@ while True:
 
                 result = apply_strategy(df, weights)
 
+                # ==========================================
+                # STRATEGY SAFETY PATCH
+                # ==========================================
+
+                if result is None:
+                    print(f"SKIPPING {symbol} - INVALID STRATEGY DATA")
+                    continue
+
                 score = result["score"]
 
                 reasons = result["reasons"]
