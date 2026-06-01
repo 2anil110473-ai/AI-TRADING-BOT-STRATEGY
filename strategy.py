@@ -12,6 +12,35 @@ from ta.volatility import AverageTrueRange
 
 def apply_strategy(df, weights):
 
+    if df is None:
+        return None
+
+    if not hasattr(df, "empty"):
+        return None
+
+    if df.empty:
+        return None
+
+    if "Close" not in df.columns:
+        return None
+
+    if "High" not in df.columns:
+        return None
+
+    if "Low" not in df.columns:
+        return None
+
+    if "Volume" not in df.columns:
+        return None
+
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+
+    df = df.dropna()
+
+    if df.empty:
+        return None
+
     if isinstance(df.columns, pd.MultiIndex):
 
         df.columns = df.columns.get_level_values(0)
