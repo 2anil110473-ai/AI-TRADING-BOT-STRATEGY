@@ -1434,8 +1434,6 @@ PAPER TRADING
 
 """)
 
-            import traceback
-
             except Exception as stock_error:
 
                 send(f"""
