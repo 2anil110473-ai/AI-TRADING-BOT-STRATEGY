@@ -1434,6 +1434,8 @@ PAPER TRADING
 
 """)
 
+            import traceback
+
             except Exception as stock_error:
 
                 send(f"""
@@ -1445,6 +1447,9 @@ PAPER TRADING
 
 ❌ ERROR:
 {str(stock_error)}
+
+❌ TRACE:
+{traceback.format_exc()}
 
 🛡 BOT CONTINUING SAFELY
 
