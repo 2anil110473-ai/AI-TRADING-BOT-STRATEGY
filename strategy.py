@@ -104,7 +104,7 @@ def apply_strategy(df, weights):
 
         score += weights["EMA"]
 
-        reasons.append("EMA Bullish")
+        reasons.append(f"EMA Bullish (+{weights['EMA']})")
 
     elif last["EMA20"] < last["EMA50"]:
 
@@ -120,7 +120,7 @@ def apply_strategy(df, weights):
 
         score += weights["RSI"]
 
-        reasons.append("RSI Strong")
+        reasons.append(f"RSI Strong (+{weights['RSI']})")
 
     elif last["RSI"] < 40:
 
@@ -134,7 +134,7 @@ def apply_strategy(df, weights):
 
         score += weights["MACD"]
 
-        reasons.append("MACD Bullish")
+        reasons.append(f"MACD Bullish (+{weights['MACD']})")
 
     else:
 
@@ -148,7 +148,7 @@ def apply_strategy(df, weights):
 
         score += weights["VWAP"]
 
-        reasons.append("Above VWAP")
+        reasons.append(f"Above VWAP (+{weights['VWAP']})")
 
     else:
 
@@ -166,7 +166,7 @@ def apply_strategy(df, weights):
 
         score += weights["VOLUME"]
 
-        reasons.append("Volume Spike")
+        reasons.append(f"Volume Spike (+{weights['VOLUME']})")
 
     # =====================================================
     # SUPPORT / RESISTANCE
@@ -184,7 +184,7 @@ def apply_strategy(df, weights):
 
         score += weights["SUPPORT"]
 
-        reasons.append("Support Holding")
+        reasons.append(f"Support Holding (+{weights['SUPPORT']})")
 
     # =====================================================
     # RESISTANCE BREAKOUT
@@ -203,7 +203,7 @@ def apply_strategy(df, weights):
 
         score += weights["BREAKOUT"]
 
-        reasons.append("Resistance Breakout")
+        reasons.append(f"Resistance Breakout (+{weights['BREAKOUT']})")
 
     # =====================================================
     # RESISTANCE REJECTION
@@ -252,7 +252,7 @@ def apply_strategy(df, weights):
 
         score += 10
 
-        reasons.append("Previous High Breakout")
+        reasons.append("Previous High Breakout (+10)")
 
     if last["Close"] < prev_low:
 
@@ -279,7 +279,7 @@ def apply_strategy(df, weights):
 
         score += 15
 
-        reasons.append("Consolidation Breakout")
+        reasons.append("Consolidation Breakout (+15)")
 
     # =====================================================
     # FALSE BREAKOUT FILTER
@@ -337,13 +337,16 @@ def apply_strategy(df, weights):
 
         score += 5
 
-        reasons.append("VWAP Trend Alignment")
+        reasons.append("VWAP Trend Alignment (+5)")
 
     # =====================================================
     # FINAL SCORE SAFETY
     # =====================================================
 
     final_score = max(0, min(100, score))
+
+    print("FINAL SCORE =", final_score)
+    print("REASONS =", reasons)
 
     # =====================================================
     # FINAL RETURN
