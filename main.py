@@ -118,7 +118,7 @@ LOSS_LIMIT_HIT = load_bot_state(
 # RE-ENTRY CONTROL
 # =============================================
 
-last_exit_time = load_bot_state("last_exit_time") 
+last_exit_time = load_bot_state("last_exit_time") or {} 
 
 # =========================================================
 # STOCK LIST
@@ -1239,6 +1239,12 @@ ACTIVE
                 # =================================================
                 # RE-ENTRY COOLDOWN
                 # =================================================
+
+                if not isinstance(last_exit_time,
+
+                dict):
+
+                    last_exit_time = {}
 
                 if stock in last_exit_time:
 
