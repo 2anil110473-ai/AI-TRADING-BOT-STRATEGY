@@ -347,6 +347,7 @@ def apply_strategy(df, weights):
 
     print("FINAL SCORE =", final_score)
     print("REASONS =", reasons)
+    print("RESISTANCE_REJECTION =", resistance_rejection)
 
     # =====================================================
     # FINAL RETURN
