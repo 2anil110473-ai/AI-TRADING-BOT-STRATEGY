@@ -1347,6 +1347,10 @@ PAPER TRADING
 ❌ ERROR:
 {str(stock_error)}
 
+📌 TRACEBACK:
+
+{traceback.format_exc()}
+
 🛡 BOT CONTINUING SAFELY
 
 """)
