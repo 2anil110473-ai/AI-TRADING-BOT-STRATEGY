@@ -1259,6 +1259,14 @@ ACTIVE
                 # BUY SIGNAL
                 # =================================================
 
+                print(
+                    stock,
+                    "CONFIDENCE =", confidence,
+                    "TREND =", trend,
+                    "TARGET_REACHED =", TARGET_REACHED,
+                    "LOSS_LIMIT_HIT =", LOSS_LIMIT_HIT
+                )
+
                 if (
 
                     confidence >= 85
