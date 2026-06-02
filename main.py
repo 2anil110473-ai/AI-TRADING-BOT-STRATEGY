@@ -1,0 +1,1406 @@
+import warnings
+warnings.filterwarnings("ignore")
+
+import yfinance as yf
+yf.set_tz_cache_location("cache")
+
+import pandas as pd
+import time
+import traceback
+import pytz
+import gc
+
+from datetime import datetime
+from threading import Thread
+from sqlalchemy.exc import OperationalError
+
+from db import (
+    init_db,
+    save_trade,
+    load_positions,
+    save_position,
+    delete_position,
+    update_daily_pnl,
+    get_lifetime_stats,
+    get_today_pnl,
+    save_analytics,
+    save_bot_state,
+    load_bot_state
+)
+
+from ai import weights
+from risk import position_size
+from market import market_trend
+from strategy import apply_strategy
+from telegram_control import send, listen_telegram
+from broker import place_order
+from learning import (
+    learn_from_trade,
+    load_weights
+)
+
+# =========================================================
+# V52 ULTRA INSTITUTIONAL AI ENGINE
+# =========================================================
+
+CAPITAL = 200000
+
+MAX_OPEN_POSITIONS = 16
+
+# =============================================
+# PRACTICALLY DISABLE FIXED TARGET EXIT
+# =============================================
+
+TARGET_PERCENT = 999
+
+STOPLOSS_PERCENT = -2
+
+TRAILING_STOPLOSS_PERCENT = 1.5
+
+# =============================================
+# TRAILING ACTIVATION
+# =============================================
+
+TRAILING_ACTIVATION_PERCENT = 5
+
+PARTIAL_BOOKING_PERCENT = 2
+
+MARKET_CRASH_THRESHOLD = -1.5
+
+# =========================================================
+# PROFESSIONAL HEARTBEAT SYSTEM
+# =========================================================
+
+MARKET_OPEN_HEARTBEAT = 1800       # 30 Minutes
+MARKET_CLOSED_HEARTBEAT = 21600    # 6 Hours
+
+FIXED_QUANTITY = 100
+
+TIMEZONE = pytz.timezone("Asia/Kolkata")
+
+# =========================================================
+# GLOBALS
+# =========================================================
+
+positions = {}
+
+today = datetime.now(TIMEZONE).strftime("%Y-%m-%d")
+
+daily_profit = get_today_pnl(today)
+
+last_heartbeat = 0
+
+# =============================================
+# DAILY RESET SYSTEM
+# =============================================
+
+last_reset_date = load_bot_state(
+    "last_reset_date"
+)
+
+# =============================================
+# DAILY CONTROL SYSTEM
+# =============================================
+
+DAILY_TARGET = 999999999
+
+DAILY_LOSS_LIMIT = -999999999
+
+TARGET_REACHED = load_bot_state(
+    "TARGET_REACHED"
+) or False
+
+LOSS_LIMIT_HIT = load_bot_state(
+    "LOSS_LIMIT_HIT"
+) or False
+
+# =============================================
+# RE-ENTRY CONTROL
+# =============================================
+
+last_exit_time = load_bot_state("last_exit_time") 
+
+# =========================================================
+# STOCK LIST
+# =========================================================
+
+STOCKS = [
+
+    "HDFCBANK.NS",
+    "ICICIBANK.NS",
+    "SBIN.NS",
+
+    "TCS.NS",
+    "INFY.NS",
+    "WIPRO.NS",
+
+    "RELIANCE.NS",
+    "TATASTEEL.NS",
+    "HINDZINC.NS",
+
+    "HINDCOPPER.NS",
+    "SUNPHARMA.NS",
+    "DRREDDY.NS",
+
+    "CIPLA.NS",
+    "COFORGE.NS",
+    "TRENT.NS",
+    "BHARTIARTL.NS"
+
+]
+
+# =========================================================
+# DATABASE INIT
+# =========================================================
+
+init_db()
+
+# =========================================================
+# LOAD LEARNED AI WEIGHTS
+# =========================================================
+
+load_weights()
+
+# =========================================================
+# LOAD POSITIONS
+# =========================================================
+
+try:
+
+    old_positions = load_positions()
+
+    if old_positions:
+
+        positions = old_positions
+
+        send(f"""
+
+♻️ OLD POSITIONS RECOVERED
+
+📦 TOTAL POSITIONS:
+{len(positions)}
+
+✅ RESTART SAFE MODE ACTIVE
+✅ CRASH RECOVERY ACTIVE
+✅ INSTITUTIONAL PERSISTENCE ACTIVE
+
+""")
+
+except Exception as e:
+
+    send(f"""
+
+⚠ POSITION RECOVERY FAILED
+
+❌ ERROR:
+{str(e)}
+
+""")
+
+# =========================================================
+# STARTUP MESSAGE
+# =========================================================
+
+send(f"""
+
+🚀 V52 ULTRA INSTITUTIONAL AI ENGINE STARTED
+
+✅ DYNAMIC SCAN ENGINE ACTIVE
+✅ PRE-MARKET ENGINE ACTIVE
+✅ INSTANT EXIT ENGINE ACTIVE
+✅ TARGET HIT DETECTION ACTIVE
+✅ TRAILING STOPLOSS ACTIVE
+✅ PARTIAL PROFIT ENGINE ACTIVE
+✅ SMART HEARTBEAT ACTIVE
+✅ MARKET TREND FILTER ACTIVE
+✅ DATABASE CONNECTED
+✅ RESTART RECOVERY ACTIVE
+✅ RAILWAY SAFE MODE ACTIVE
+✅ TELEGRAM RETRY ACTIVE
+✅ MEMORY OPTIMIZATION ACTIVE
+✅ PAPER TRADING MODE ACTIVE
+
+💰 CAPITAL:
+₹{CAPITAL}
+
+🎯 DAILY TARGET:
+₹{DAILY_TARGET}
+
+📦 MAX OPEN POSITIONS:
+{MAX_OPEN_POSITIONS}
+
+📦 FIXED QUANTITY:
+{FIXED_QUANTITY}
+
+🛡 SYSTEM:
+ULTRA INSTITUTIONAL GRADE
+
+""")
+
+# =========================================================
+# MARKET HOURS
+# =========================================================
+
+def market_open():
+
+    now = datetime.now(TIMEZONE)
+
+    if now.weekday() >= 5:
+        return False
+
+    current = now.strftime("%H:%M")
+
+    return "09:00" <= current <= "15:30"
+
+# =========================================================
+# DAILY RESET ENGINE
+# =========================================================
+
+def daily_reset():
+
+    global daily_profit
+    global TARGET_REACHED
+    global LOSS_LIMIT_HIT
+    global last_reset_date
+
+    now = datetime.now(TIMEZONE)
+
+    current_date = now.strftime("%Y-%m-%d")
+
+    current_time = now.strftime("%H:%M")
+
+    # =========================================
+    # RESET AFTER 7 AM
+    # =========================================
+
+    if current_time >= "07:00":
+
+        # =====================================
+        # FIRST START
+        # =====================================
+
+        if last_reset_date is None:
+
+            # =================================
+            # ONLY INITIALIZE STATE
+            # DO NOT RESET DAILY PNL
+            # =================================
+
+            last_reset_date = current_date
+
+            save_bot_state(
+                "last_reset_date",
+                current_date
+            )
+
+            send("""
+
+♻️ BOT STATE RECOVERED
+
+✅ last_reset_date recreated
+✅ daily pnl preserved
+✅ financial data protected
+
+""")
+
+        # =====================================
+        # NEW DAY DETECTED
+        # =====================================
+
+        elif current_date != last_reset_date:
+
+            # =================================
+            # RESET DAILY VALUES
+            # =================================
+
+            daily_profit = 0
+
+            TARGET_REACHED = False
+
+            LOSS_LIMIT_HIT = False
+
+            last_reset_date = current_date
+
+            # =================================
+            # SAVE RESET STATE
+            # =================================
+
+            save_bot_state(
+                "TARGET_REACHED",
+                False
+            )
+
+            save_bot_state(
+                "LOSS_LIMIT_HIT",
+                False
+            )
+
+            save_bot_state(
+                "last_reset_date",
+                current_date
+            )
+
+            # =================================
+            # SAVE DAILY RESET TO DB
+            # =================================
+
+            update_daily_pnl(current_date, 0)
+
+            send("""
+
+🌅 NEW TRADING DAY STARTED
+
+✅ DAILY PROFIT RESET
+✅ TARGET RESET
+✅ LOSS LIMIT RESET
+✅ BUY SYSTEM REACTIVATED
+
+💰 DAILY PNL:
+₹0
+
+🚀 BOT READY
+
+""")
+
+# =========================================================
+# BUY ALLOWED
+# =========================================================
+
+def buy_allowed():
+
+    now = datetime.now(TIMEZONE)
+
+    current = now.strftime("%H:%M")
+
+    return "09:15" <= current <= "15:15"
+
+# =========================================================
+# DYNAMIC SCAN ENGINE
+# =========================================================
+
+def dynamic_scan_interval():
+
+    now = datetime.now(TIMEZONE)
+
+    current = now.strftime("%H:%M")
+
+    # =========================================
+    # MARKET OPENING FAST MODE
+    # =========================================
+
+    if "09:15" <= current <= "10:00":
+
+        return 15
+
+    # =========================================
+    # CLOSING SESSION FAST MODE
+    # =========================================
+
+    elif "14:45" <= current <= "15:30":
+
+        return 20
+
+    # =========================================
+    # NORMAL MARKET
+    # =========================================
+
+    else:
+
+        return 60
+
+# =========================================================
+# MARKET CRASH DETECTION
+# =========================================================
+
+def market_crash():
+
+    try:
+
+        nifty = yf.download(
+
+            "^NSEI",
+            period="2d",
+            interval="5m",
+            auto_adjust=True,
+            progress=False,
+            threads=False
+
+        )
+
+        if nifty.empty:
+            return False
+
+        if isinstance(nifty.columns, pd.MultiIndex):
+
+            nifty.columns = nifty.columns.get_level_values(0)
+
+        close = float(nifty["Close"].iloc[-1])
+
+        prev = float(nifty["Close"].iloc[-2])
+
+        change = ((close - prev) / prev) * 100
+
+        return change <= MARKET_CRASH_THRESHOLD
+
+    except:
+
+        return False
+
+# =========================================================
+# HEARTBEAT THREAD
+# =========================================================
+
+def heartbeat():
+
+    global last_heartbeat
+
+    while True:
+
+        try:
+
+            now = time.time()
+
+            # =============================================
+            # DYNAMIC HEARTBEAT MODE
+            # =============================================
+
+            if market_open():
+
+                heartbeat_interval = MARKET_OPEN_HEARTBEAT
+
+            else:
+
+                heartbeat_interval = MARKET_CLOSED_HEARTBEAT
+
+            # =============================================
+            # HEARTBEAT SEND
+            # =============================================
+
+            if now - last_heartbeat >= heartbeat_interval:
+                
+                stats = get_lifetime_stats()
+
+                send(f"""
+
+💓 BOT HEARTBEAT
+
+✅ BOT RUNNING OK
+✅ AI ENGINE ACTIVE
+✅ DATABASE CONNECTED
+✅ MARKET SCANNER ACTIVE
+✅ EXIT ENGINE ACTIVE
+
+💰 DAILY PROFIT:
+₹{round(daily_profit,2)}
+
+📈 LIFETIME TRADES:
+{stats["total_trades"]}
+
+💰 LIFETIME PNL:
+₹{stats["lifetime_pnl"]}
+
+🎯 ACCURACY:
+{stats["accuracy"]}%
+
+✅ WIN TRADES:
+{stats["win_trades"]}
+
+❌ LOSS TRADES:
+{stats["loss_trades"]}
+
+📊 OPEN POSITIONS:
+{len(positions)}
+
+📈 TRACKING STOCKS:
+{len(STOCKS)}
+
+🚀 SYSTEM STATUS:
+STABLE
+
+""")
+
+                last_heartbeat = now
+
+            time.sleep(30)
+
+        except:
+
+            time.sleep(30)
+
+# =========================================================
+# START HEARTBEAT THREAD
+# =========================================================
+
+Thread(target=heartbeat, daemon=True).start()
+
+Thread(target=listen_telegram, daemon=True).start()
+
+# =========================================================
+# MAIN LOOP
+# =========================================================
+
+while True:
+
+    try:
+
+        # =====================================
+        # SAFE DAILY PNL RESYNC FROM DATABASE
+        # =====================================
+
+        today = datetime.now(TIMEZONE).strftime("%Y-%m-%d")
+
+        daily_profit = get_today_pnl(today)
+
+        # =====================================
+        # DAILY RESET CHECK
+        # =====================================
+
+        daily_reset()
+
+        # =====================================================
+        # MARKET CLOSED MODE
+        # =====================================================
+
+        if not market_open():
+
+            now = datetime.now(TIMEZONE)
+
+            hour = now.hour
+
+    # =========================================
+    # WEEKEND MODE
+    # =========================================
+
+            if now.weekday() >= 5:
+
+                print("Weekend Sleep Mode Active")
+
+                time.sleep(3600)
+
+    # =========================================
+    # NIGHT MODE
+    # =========================================
+
+            elif hour >= 16 or hour < 7:
+
+                print("Night Mode Active")
+
+                time.sleep(1800)
+
+    # =========================================
+    # PRE-MARKET WAIT
+    # =========================================
+
+            else:
+
+                 print("Waiting For Market Open")
+
+                 time.sleep(300)
+
+            continue
+
+        # =====================================================
+        # DYNAMIC SCAN SPEED
+        # =====================================================
+
+        SCAN_INTERVAL = dynamic_scan_interval()
+
+        # =====================================================
+        # MARKET CRASH PROTECTION
+        # =====================================================
+
+        if market_crash():
+
+            send("""
+
+🚨 MARKET CRASH DETECTED
+
+🛑 NEW TRADES BLOCKED
+
+🛡 DEFENSIVE MODE ACTIVE
+
+""")
+
+            time.sleep(300)
+
+            continue
+            
+        # =====================================================
+        # DAILY TARGET CONTROL
+        # =====================================================
+
+        if daily_profit >= DAILY_TARGET:
+
+            if not TARGET_REACHED:
+
+                send(f"""
+
+        🎯 DAILY TARGET ACHIEVED
+
+        💰 TOTAL PROFIT:
+        ₹{round(daily_profit,2)}
+
+        🛑 NEW BUY TRADES BLOCKED
+
+        🛡 ONLY POSITION MANAGEMENT ACTIVE
+
+        """)
+
+                TARGET_REACHED = True
+
+                save_bot_state(
+                    "TARGET_REACHED",
+                    True
+                )
+
+        # =====================================================
+        # DAILY LOSS LIMIT CONTROL
+        # =====================================================
+
+        if daily_profit <= DAILY_LOSS_LIMIT:
+
+            if not LOSS_LIMIT_HIT:
+
+                send(f"""
+
+        🛑 DAILY LOSS LIMIT HIT
+
+        💰 TOTAL LOSS:
+        ₹{round(daily_profit,2)}
+
+        🚫 NEW BUY TRADES BLOCKED
+
+        🛡 RISK PROTECTION ACTIVE
+
+        """)
+
+                LOSS_LIMIT_HIT = True
+
+                save_bot_state(
+                    "LOSS_LIMIT_HIT",
+                    True
+                )
+
+        # =====================================================
+        # MARKET TREND
+        # =====================================================
+
+        trend = market_trend()
+
+        # =====================================================
+        # SCAN STOCKS
+        # =====================================================
+
+        for stock in STOCKS:
+
+            try:
+
+                # =================================================
+                # DOWNLOAD DATA
+                # =================================================
+
+                df = yf.download(
+
+                    stock,
+                    period="5d",
+                    interval="5m",
+                    auto_adjust=True,
+                    progress=False,
+                    threads=False
+
+                )
+
+                if df.empty or len(df) < 50:
+                    continue
+
+                # =================================================
+                # FIX MULTI INDEX
+                # =================================================
+
+                if isinstance(df.columns, pd.MultiIndex):
+
+                    df.columns = df.columns.get_level_values(0)
+
+                df = df.dropna()
+
+                # =================================================
+                # PRICE
+                # =================================================
+
+                price = round(
+                    float(df["Close"].iloc[-1]),
+                    2
+                )
+
+                # =================================================
+                # STRATEGY
+                # =================================================
+
+                result = apply_strategy(df, weights)
+
+                score = result["score"]
+
+                reasons = result["reasons"]
+
+                confidence = score
+
+                signals = result["signals"]
+
+                # =================================================
+                # POSITION MANAGEMENT
+                # =================================================
+
+                if stock in positions:
+
+                    bp = positions[stock]["buy_price"]
+
+                    qty = positions[stock]["qty"]
+
+                    highest = positions[stock]["highest_price"]
+
+                    partial_booked = positions[stock]["partial_booked"]
+
+                    # =============================================
+                    # UPDATE HIGHEST
+                    # =============================================
+
+                    if price > highest:
+
+                        highest = price
+
+                        positions[stock]["highest_price"] = highest
+
+                        save_position(
+
+                            stock,
+                            positions[stock]["buy_price"],
+                            positions[stock]["qty"],
+                            positions[stock]["highest_price"],
+                            positions[stock]["partial_booked"]
+
+                        )
+
+                    # =============================================
+                    # PNL
+                    # =============================================
+
+                    pnl_percent = round(
+                        ((price - bp) / bp) * 100,
+                        2
+                    )
+
+                    current_qty = positions[stock]["qty"]
+
+                    pnl_amount = round(
+                        ((price - bp) * current_qty),
+                        2
+                    )
+
+                    trailing_sl = round(
+
+                        highest * (
+                            1 - TRAILING_STOPLOSS_PERCENT / 100
+                        ),
+                        2
+
+                    )
+
+                    # =============================================
+                    # REAL PARTIAL PROFIT BOOKING
+                    # =============================================
+
+                    if (
+
+                        pnl_percent >= PARTIAL_BOOKING_PERCENT
+                        and not partial_booked
+
+                    ):
+
+                        partial_qty = qty // 2
+
+                        # =========================================
+                        # EXECUTE PARTIAL SELL
+                        # =========================================
+
+                        place_order(stock, "SELL", partial_qty)
+
+                        # =========================================
+                        # UPDATE REMAINING POSITION
+                        # =========================================
+
+                        remaining_qty = qty - partial_qty
+
+                        positions[stock]["qty"] = remaining_qty
+
+                        positions[stock]["partial_booked"] = True
+
+                        qty = remaining_qty
+                        
+                        current_qty = remaining_qty
+
+                        # =========================================
+                        # SAVE UPDATED POSITION
+                        # =========================================
+
+                        save_position(
+
+                            stock,
+                            positions[stock]["buy_price"],
+                            positions[stock]["qty"],
+                            positions[stock]["highest_price"],
+                            positions[stock]["partial_booked"]
+
+                        )
+
+                        # =========================================
+                        # PARTIAL PNL
+                        # =========================================
+
+                        partial_pnl = round(
+
+                            ((price - bp) * partial_qty),
+                            2
+
+                        )
+
+                        daily_profit += partial_pnl
+
+                        # =========================================
+                        # SAVE UPDATED DAILY PNL
+                        # =========================================
+
+                        today = datetime.now(TIMEZONE).strftime("%Y-%m-%d")
+
+                        update_daily_pnl(
+                            today,
+                            daily_profit
+                        )
+
+                        # =========================================
+                        # SAVE TRADE
+                        # =========================================
+
+                        save_trade(
+
+                            stock,
+                            "PARTIAL SELL",
+                            price,
+                            partial_qty,
+                            partial_pnl,
+                            "PARTIAL PROFIT BOOKING"
+
+                        )
+
+                        # =========================================
+                        # TELEGRAM ALERT
+                        # =========================================
+
+                        send(f"""
+
+🟡 REAL PARTIAL PROFIT BOOKING
+
+📈 STOCK:
+{stock}
+
+💰 ENTRY PRICE:
+₹{bp}
+
+💰 PARTIAL EXIT PRICE:
+₹{price}
+
+📦 SOLD QUANTITY:
+{partial_qty}
+
+📦 REMAINING QUANTITY:
+{remaining_qty}
+
+💵 BOOKED PROFIT:
+₹{partial_pnl}
+
+📊 RETURN:
+{pnl_percent}%
+
+💰 DAILY PROFIT:
+₹{round(daily_profit,2)}
+
+🛡 REMAINING POSITION:
+ACTIVE
+
+🚀 INSTITUTIONAL SCALE-OUT:
+ACTIVE
+
+""")
+                        
+                    # =============================================
+                    # INSTITUTIONAL EXIT ENGINE
+                    # =============================================
+
+                    exit_reason = None
+
+                    # =============================================
+                    # TARGET EXIT
+                    # =============================================
+
+                    target_price = round(
+                        bp * (1 + TARGET_PERCENT / 100),
+                        2
+                    )
+
+                    if price >= target_price:
+
+                        exit_reason = "TARGET ACHIEVED"
+
+                    # =============================================
+                    # HARD STOPLOSS
+                    # =============================================
+
+                    elif price <= round(
+                        bp * (1 + STOPLOSS_PERCENT / 100),
+                        2
+                    ):
+
+                        exit_reason = "STOPLOSS HIT"
+
+                    # =============================================
+                    # TRAILING STOPLOSS
+                    # =============================================
+
+                    elif (
+
+                        pnl_percent >= TRAILING_ACTIVATION_PERCENT
+                        and price <= trailing_sl
+
+                    ):
+
+                        exit_reason = "TRAILING STOPLOSS HIT"
+
+                    # =============================================
+                    # RESISTANCE REJECTION EXIT
+                    # =============================================
+
+                    elif (
+                        result["resistance_rejection"]
+                        and pnl_percent > 1
+                    ):
+
+                        exit_reason = "RESISTANCE REJECTION"
+
+                    # =============================================
+                    # SUPPORT BREAKDOWN EXIT
+                    # =============================================
+
+                    elif (
+
+                        price < result["support"] * 0.997
+                        and pnl_percent < -0.7
+
+                    ):
+
+                        exit_reason = "SUPPORT BREAKDOWN"
+
+                    # =============================================
+                    # EMA TREND REVERSAL EXIT
+                    # =============================================
+
+                    elif (
+
+                        result["ema_bearish"]
+                        and pnl_percent > 1.5
+
+                    ):
+
+                        exit_reason = "EMA TREND REVERSAL"
+
+                    # =============================================
+                    # VWAP BREAKDOWN EXIT
+                    # =============================================
+
+                    elif (
+
+                        price < result["vwap"] * 0.998
+                        and pnl_percent > 2
+
+                    ):
+
+                        exit_reason = "VWAP BREAKDOWN"
+
+
+                    # =============================================
+                    # MARKET CRASH SAFETY EXIT
+                    # =============================================
+
+                    elif market_crash():
+
+                        exit_reason = "MARKET CRASH EXIT"
+
+                    # =============================================
+                    # EXIT EXECUTION
+                    # =============================================
+
+                    if exit_reason:
+
+                        if stock not in positions:
+                            continue
+
+                        signals = positions[stock].get("signals", {})
+
+                        # =========================================
+                        # FINAL REMAINING POSITION PNL
+                        # =========================================
+
+                        final_pnl = round(
+
+                            ((price - bp) * current_qty),
+                            2
+
+                        )
+
+                        daily_profit += final_pnl
+                        
+                        # =========================================
+                        # CURRENT REMAINING QUANTITY
+                        # =========================================
+
+                        current_qty = positions[stock]["qty"]
+
+                        # =========================================
+                        # DAILY PNL SAVE
+                        # =========================================
+
+                        today = datetime.now(TIMEZONE).strftime("%Y-%m-%d")
+                        update_daily_pnl(today, daily_profit)
+
+                        # =========================================
+                        # FINAL EXIT
+                        # =========================================
+
+                        place_order(stock, "SELL", current_qty)
+
+                        save_trade(
+                            stock,
+                            "SELL",
+                            price,
+                            current_qty,
+                            final_pnl,
+                            exit_reason,
+                            signals
+                        )
+
+                        learn_from_trade(
+                        signals,
+                        final_pnl
+                        )
+
+                        # =========================================
+                        # SAVE ANALYTICS
+                        # =========================================
+
+                        try:
+
+                            stats = get_lifetime_stats()
+
+                            avg_profit = 0
+
+                            if stats["total_trades"] > 0:
+
+                                avg_profit = round(
+
+                       stats["lifetime_pnl"] /
+                       stats["total_trades"],
+
+                                2
+
+                            )
+
+                            save_analytics(
+
+                                stats["accuracy"],
+                                stats["lifetime_pnl"],
+                                stats["total_trades"],
+                                avg_profit
+
+                            )
+
+                        except Exception as analytics_error:
+
+                            print(f"Analytics Save Error: {analytics_error}")
+
+                        send(f"""
+                        
+
+🔴 POSITION EXIT
+
+📉 STOCK:
+{stock}
+
+💰 ENTRY PRICE:
+₹{bp}
+
+💰 EXIT PRICE:
+₹{price}
+
+📦 QUANTITY:
+{current_qty}
+
+💵 PNL:
+₹{final_pnl}
+
+📊 RETURN:
+{pnl_percent}%
+
+🧠 EXIT REASON:
+{exit_reason}
+
+💰 DAILY PROFIT:
+₹{round(daily_profit,2)}
+
+✅ POSITION CLOSED
+✅ CAPITAL RELEASED
+✅ EXIT SUCCESSFUL
+
+""")
+
+                        delete_position(stock)
+
+                        del positions[stock]
+                        last_exit_time[stock] = time.time()
+
+                        save_bot_state(
+                            "last_exit_time",
+                            last_exit_time
+                        )
+
+                        continue
+
+                # =================================================
+                # BUY TIME FILTER
+                # =================================================
+
+                if not buy_allowed():
+                    continue
+
+                # =================================================
+                # MAX POSITION LIMIT
+                # =================================================
+
+                if len(positions) >= MAX_OPEN_POSITIONS:
+                    continue
+
+                # =================================================
+                # SKIP OPEN POSITION
+                # =================================================
+
+                if stock in positions:
+                    continue
+
+                # =================================================
+                # TREND FILTER
+                # =================================================
+
+                if trend == "BEARISH" and confidence < 85:
+                    continue
+
+                # =================================================
+                # MULTI TIMEFRAME
+                # =================================================
+
+                higher = yf.download(
+
+                    stock,
+                    period="10d",
+                    interval="1h",
+                    auto_adjust=True,
+                    progress=False,
+                    threads=False
+
+                )
+
+                if higher.empty:
+                    continue
+
+                if isinstance(higher.columns, pd.MultiIndex):
+
+                    higher.columns = higher.columns.get_level_values(0)
+
+                h_close = float(higher["Close"].iloc[-1])
+
+                h_ema = float(
+
+                    higher["Close"]
+                    .rolling(20)
+                    .mean()
+                    .iloc[-1]
+
+                )
+
+                if h_close < h_ema:
+                    continue
+
+                # =================================================
+                # RE-ENTRY COOLDOWN
+                # =================================================
+
+                if stock in last_exit_time:
+
+                    cooldown = time.time() - last_exit_time[stock]
+
+                    # 30 MINUTES COOLDOWN
+
+                    if cooldown < 1800:
+                        continue
+                
+                # =================================================
+                # BUY SIGNAL
+                # =================================================
+
+                if (
+
+                    confidence >= 85
+                    and not TARGET_REACHED
+                    and not LOSS_LIMIT_HIT
+
+                ):
+
+                    qty = FIXED_QUANTITY
+
+                    positions[stock] = {
+
+                        "buy_price": price,
+                        "qty": qty,
+                        "highest_price": price,
+                        "partial_booked": False,
+                        "signals": signals
+
+                    }
+
+                    save_position(
+
+                        stock,
+                        positions[stock]["buy_price"],
+                        positions[stock]["qty"],
+                        positions[stock]["highest_price"],
+                        positions[stock]["partial_booked"],
+                        positions[stock]["signals"]
+
+                    )
+
+                    place_order(stock, "BUY", qty)
+
+                    save_trade(
+
+                        stock,
+                        "BUY",
+                        price,
+                        qty,
+                        0,
+                        "AI BUY",
+                        signals
+
+                    )
+
+                    send(f"""
+
+🟢 STRONG AI BUY SIGNAL
+
+📈 STOCK:
+{stock}
+
+💰 ENTRY PRICE:
+₹{price}
+
+📦 QUANTITY:
+{qty}
+
+💵 INVESTMENT:
+₹{round(price * qty,2)}
+
+🧠 AI CONFIDENCE:
+{confidence}/100
+
+📊 AI ANALYSIS:
+
+{chr(10).join(reasons)}
+
+🎯 TARGET:
++3%
+
+🛑 STOPLOSS:
+-2%
+
+🛡 TRAILING STOPLOSS:
+ACTIVE
+
+🚀 MODE:
+PAPER TRADING
+
+""")
+
+            except Exception as stock_error:
+
+                send(f"""
+
+⚠ STOCK ERROR DETECTED
+
+📉 STOCK:
+{stock}
+
+❌ ERROR:
+{str(stock_error)}
+
+🛡 BOT CONTINUING SAFELY
+
+""")
+
+                if 'df' in locals():
+                    del df
+
+                if 'higher' in locals():
+                    del higher
+
+                continue
+
+        # =====================================================
+        # MEMORY CLEANUP
+        # =====================================================
+
+        gc.collect()
+
+        # =====================================================
+        # WAIT
+        # =====================================================
+
+        time.sleep(SCAN_INTERVAL)
+
+    except OperationalError as db_error:
+
+        send(f"""
+
+⚠ DATABASE RECONNECTED
+
+ERROR:
+{str(db_error)}
+
+""")
+
+        time.sleep(5)
+
+        continue
+
+    except Exception as e:
+
+        send(f"""
+
+🚨 MAIN LOOP ERROR
+
+❌ ERROR:
+{str(e)}
+
+📌 TRACEBACK:
+
+{traceback.format_exc()}
+
+🛡 AUTO RECOVERY ACTIVE
+
+""")
+
+        time.sleep(60)
