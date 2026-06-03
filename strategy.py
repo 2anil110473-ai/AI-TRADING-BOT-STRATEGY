@@ -221,7 +221,9 @@ def apply_strategy(df, weights):
 
         resistance_rejection = True
 
-        reasons.append("Resistance Rejection")
+        score -= 15
+
+        reasons.append("Resistance Rejection (-15)")
 
     # =====================================================
     # SUPPORT BOUNCE
@@ -238,7 +240,9 @@ def apply_strategy(df, weights):
 
         bounce = True
 
-        reasons.append("Support Bounce")
+        score += 10
+
+        reasons.append("Support Bounce (+10)") 
 
     # =====================================================
     # PREVIOUS DAY BREAKOUT
@@ -258,7 +262,7 @@ def apply_strategy(df, weights):
 
         score -= 10
 
-        reasons.append("Previous Low Breakdown")
+        reasons.append("Previous Low Breakdown (-10)")
 
     # =====================================================
     # CONSOLIDATION BREAKOUT
@@ -304,7 +308,7 @@ def apply_strategy(df, weights):
 
     ):
 
-        score -= 15
+        score -= 25
 
         reasons.append("False Breakout Risk")
 
@@ -320,7 +324,7 @@ def apply_strategy(df, weights):
 
     if atr_percent >= 4:
 
-        score -= 10
+        score -= 20
 
         reasons.append("High Volatility Risk")
 
