@@ -205,6 +205,12 @@ def apply_strategy(df, weights):
 
         reasons.append(f"Resistance Breakout (+{weights['BREAKOUT']})")
 
+    if breakout and volume_spike:
+
+        score += 10
+
+        reasons.append("Volume Confirmed Breakout (+10)")
+
     # =====================================================
     # RESISTANCE REJECTION
     # =====================================================
