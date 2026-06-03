@@ -1270,7 +1270,6 @@ ACTIVE
                 if (
 
                     confidence >= 85
-                    and result["long_term_trend"]
                     and not TARGET_REACHED
                     and not LOSS_LIMIT_HIT
 
