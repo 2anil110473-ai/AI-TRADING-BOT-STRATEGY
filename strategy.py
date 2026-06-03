@@ -392,9 +392,9 @@ def apply_strategy(df, weights):
 
     if recent_strength < 1:
 
-        score -= 15
+        score -= 10
 
-        reasons.append("Weak Closing Momentum (-15)")
+        reasons.append("Weak Closing Momentum (-10)")
 
     # =====================================================
     # FINAL SCORE SAFETY
