@@ -37,6 +37,11 @@ def apply_strategy(df, weights):
         window=50
     ).ema_indicator()
 
+    df["EMA200"] = EMAIndicator(
+        close=close,
+        window=200
+    ).ema_indicator()
+
     # =====================================================
     # RSI
     # =====================================================
@@ -98,6 +103,8 @@ def apply_strategy(df, weights):
     ema_bullish = False
     ema_bearish = False
 
+    long_term_trend = False
+
     if last["EMA20"] > last["EMA50"]:
 
         ema_bullish = True
@@ -111,6 +118,24 @@ def apply_strategy(df, weights):
         ema_bearish = True
 
         reasons.append("EMA Bearish")
+
+    # =====================================================
+    # LONG TERM TREND
+    # =====================================================
+
+    if last["EMA50"] > last["EMA200"]:
+
+        long_term_trend = True
+
+        score += 10
+
+        reasons.append("Long Term Uptrend (+10)")
+
+    else:
+
+        score -= 15
+
+        reasons.append("Weak Long Term Trend (-15)")
 
     # =====================================================
     # RSI
@@ -433,6 +458,8 @@ def apply_strategy(df, weights):
 
     "bounce": bounce,
 
-    "resistance_rejection": resistance_rejection
+    "resistance_rejection": resistance_rejection,
+
+    "long_term_trend": long_term_trend
 
 }
