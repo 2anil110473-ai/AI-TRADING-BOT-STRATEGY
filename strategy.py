@@ -344,6 +344,28 @@ def apply_strategy(df, weights):
         reasons.append("VWAP Trend Alignment (+5)")
 
     # =====================================================
+    # GAP DOWN RISK FILTER
+    # =====================================================
+
+    last_5_close = close.tail(5)
+
+    recent_strength = (
+
+        (last_5_close.iloc[-1] - last_5_close.iloc[0])
+
+        / last_5_close.iloc[0]
+
+    ) * 100
+
+    # पिछले 5 candles में momentum कमजोर है
+
+    if recent_strength < 1:
+
+        score -= 15
+
+        reasons.append("Weak Closing Momentum (-15)")
+
+    # =====================================================
     # FINAL SCORE SAFETY
     # =====================================================
 
