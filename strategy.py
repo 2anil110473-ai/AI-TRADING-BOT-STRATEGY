@@ -360,18 +360,6 @@ def apply_strategy(df, weights):
         reasons.append("High Volatility Risk")
 
     # =====================================================
-    # ATR DYNAMIC TRAILING
-    # =====================================================
-
-    dynamic_trailing_percent = max(
-
-        1.0,
-
-        atr_percent * 1.2
-
-    )
-
-    # =====================================================
     # VWAP SUPPORT ALIGNMENT
     # =====================================================
 
@@ -449,8 +437,6 @@ def apply_strategy(df, weights):
     "atr": float(last["ATR"]),
 
     "atr_percent": float(atr_percent),
-
-    "dynamic_trailing_percent": float(dynamic_trailing_percent),
 
     "support": float(support),
 
