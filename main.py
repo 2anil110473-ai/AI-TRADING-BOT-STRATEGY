@@ -1269,11 +1269,16 @@ ACTIVE
 
                 if (
 
-                    confidence >= 85
+                    (
+                        confidence >= 85
+                        if market_regime
+                        else confidence >= 90
+                    )
+
                     and not TARGET_REACHED
                     and not LOSS_LIMIT_HIT
 
-                ):
+                 ):
 
                     qty = FIXED_QUANTITY
 
