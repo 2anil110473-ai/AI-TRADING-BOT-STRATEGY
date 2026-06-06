@@ -228,7 +228,7 @@ def handle_command(message):
 
 """
 
-    send(msg)
+        send(msg)
 
     # =============================================
     # MARKET STATUS
