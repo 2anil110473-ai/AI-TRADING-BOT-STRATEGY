@@ -576,35 +576,6 @@ RUNNING
 
         send(msg)
 
-# =============================================
-# OPEN POSITIONS
-# =============================================
-
-elif text == "/positions":
-
-    open_positions = get_open_positions()
-
-    if not open_positions:
-
-        send("📦 No Open Positions")
-
-    else:
-
-        msg = "\n📦 OPEN POSITIONS\n\n"
-
-        for p in open_positions:
-
-            msg += f"""
-
-📈 {p['symbol']}
-💰 Buy Price: ₹{p['buy_price']}
-📦 Qty: {p['qty']}
-📊 Highest: ₹{p['highest_price']}
-
-"""
-
-        send(msg)
-
 # =========================================================
 # TELEGRAM COMMAND LISTENER
 # =========================================================
