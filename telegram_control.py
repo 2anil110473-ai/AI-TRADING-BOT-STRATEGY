@@ -1,6 +1,7 @@
 import requests
 import os
 import time
+import yfinance as yf
 
 from db import (
     get_today_trades,
@@ -146,28 +147,88 @@ def handle_command(message):
 
     elif text == "/openpositions":
 
-        positions = get_open_positions()
+    positions = get_open_positions()
 
-        if not positions:
+    if not positions:
 
-            send("❌ No open positions")
-            return
+        send("❌ No open positions")
+        return
 
-        msg = "📦 OPEN POSITIONS\n\n"
+    msg = "📦 OPEN POSITIONS\n\n"
 
-        for p in positions:
+    total_pnl = 0
 
-            msg += f"""
+    for p in positions:
 
-{p[0]}
+        symbol = p[0]
+        buy_price = float(p[1])
+        qty = int(p[2])
+        highest = float(p[3])
 
-💰 Buy Price: ₹{p[1]}
-📦 Qty: {p[2]}
-📈 Highest: ₹{p[3]}
+        try:
+
+            current_price = round(
+
+                yf.Ticker(symbol)
+                .history(period="1d")
+                ["Close"]
+                .iloc[-1],
+
+                2
+
+            )
+
+            pnl = round(
+
+                (current_price - buy_price) * qty,
+
+                2
+
+            )
+
+            pnl_percent = round(
+
+                ((current_price - buy_price)
+                / buy_price) * 100,
+
+                2
+
+            )
+
+            total_pnl += pnl
+
+        except:
+
+            current_price = "NA"
+            pnl = 0
+            pnl_percent = 0
+
+        msg += f"""
+
+{symbol}
+
+💰 Buy Price: ₹{buy_price}
+📈 Current: ₹{current_price}
+📦 Qty: {qty}
+
+💵 PNL: ₹{pnl}
+📊 Return: {pnl_percent}%
+
+🚀 Highest: ₹{highest}
 
 """
 
-        send(msg)
+    msg += f"""
+
+====================
+
+💰 TOTAL LIVE PNL
+
+₹{round(total_pnl,2)}
+
+"""
+
+    send(msg)
 
     # =============================================
     # MARKET STATUS
