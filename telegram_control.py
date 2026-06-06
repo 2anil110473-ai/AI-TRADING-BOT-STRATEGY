@@ -147,55 +147,55 @@ def handle_command(message):
 
     elif text == "/openpositions":
 
-    positions = get_open_positions()
+        positions = get_open_positions()
 
-    if not positions:
+        if not positions:
 
-        send("❌ No open positions")
-        return
+            send("❌ No open positions")
+            return
 
-    msg = "📦 OPEN POSITIONS\n\n"
+        msg = "📦 OPEN POSITIONS\n\n"
 
-    total_pnl = 0
+        total_pnl = 0
 
-    for p in positions:
+        for p in positions:
 
-        symbol = p[0]
-        buy_price = float(p[1])
-        qty = int(p[2])
-        highest = float(p[3])
+            symbol = p[0]
+            buy_price = float(p[1])
+            qty = int(p[2])
+            highest = float(p[3])
 
-        try:
+            try:
 
-            current_price = round(
+                current_price = round(
 
-                yf.Ticker(symbol)
-                .history(period="1d")
-                ["Close"]
-                .iloc[-1],
+                    yf.Ticker(symbol)
+                    .history(period="1d")
+                    ["Close"]
+                    .iloc[-1],
 
-                2
+                    2
 
-            )
+                )
 
-            pnl = round(
+                pnl = round(
 
-                (current_price - buy_price) * qty,
+                    (current_price - buy_price) * qty,
 
-                2
+                    2
 
-            )
+                )
 
-            pnl_percent = round(
+                pnl_percent = round(
 
-                ((current_price - buy_price)
-                / buy_price) * 100,
+                    ((current_price - buy_price)
+                    / buy_price) * 100,
 
-                2
+                    2
 
-            )
+                )
 
-            total_pnl += pnl
+                total_pnl += pnl
 
         except:
 
