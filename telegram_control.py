@@ -197,13 +197,13 @@ def handle_command(message):
 
                 total_pnl += pnl
 
-        except:
+            except:
 
             current_price = "NA"
             pnl = 0
             pnl_percent = 0
 
-        msg += f"""
+            msg += f"""
 
 {symbol}
 
@@ -218,7 +218,7 @@ def handle_command(message):
 
 """
 
-    msg += f"""
+        msg += f"""
 
 ====================
 
