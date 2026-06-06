@@ -199,9 +199,9 @@ def handle_command(message):
 
             except:
 
-            current_price = "NA"
-            pnl = 0
-            pnl_percent = 0
+                current_price = "NA"
+                pnl = 0
+                pnl_percent = 0
 
             msg += f"""
 
