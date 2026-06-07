@@ -29,7 +29,7 @@ LAST_UPDATE_ID = None
 
 try:
 
-    url = f"https://api.telegram.org/bot{TOKEN}/getUpdates"
+    url = f"https://api.telegram.org/bot{TOKEN}/getUpdates?offset=-1"
 
     response = requests.get(url).json()
 
