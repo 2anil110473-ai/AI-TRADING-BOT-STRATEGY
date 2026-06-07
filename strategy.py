@@ -92,6 +92,17 @@ def apply_strategy(df, weights):
 
     last = df.iloc[-1]
 
+    # =============================================
+    # RESISTANCE DISTANCE
+    # =============================================
+
+    recent_high = df["High"].tail(20).max()
+
+    distance_from_resistance = (
+        (recent_high - last["Close"])
+        / last["Close"]
+    ) * 100
+
     score = 0
 
     reasons = []
@@ -160,6 +171,16 @@ def apply_strategy(df, weights):
         score -= 10
 
         reasons.append("Overbought Risk (-10)")
+
+    # =============================================
+    # RESISTANCE FILTER
+    # =============================================
+
+    if distance_from_resistance < 1.5:
+
+        score -= 15
+
+        reasons.append("Near Resistance (-15)")
 
     # =====================================================
     # MACD
