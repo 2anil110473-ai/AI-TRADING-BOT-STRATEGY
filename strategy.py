@@ -320,7 +320,34 @@ def apply_strategy(df, weights):
 
         score += 10
 
-        reasons.append("Support Bounce (+10)") 
+        reasons.append("Support Bounce (+10)")
+
+    # =====================================================
+    # RECOVERY CATCH MODE V2
+    # =====================================================
+
+    recovery_mode = False
+
+    recent_low = low.tail(10).min()
+
+    recovery_percent = (
+        (last["Close"] - recent_low)
+        / recent_low
+    ) * 100
+
+    if (
+
+        recovery_percent > 1.5
+        and last["RSI"] > 45
+        and last["Close"] > last["VWAP"]
+
+    ):
+
+        recovery_mode = True
+
+        score += 12
+
+        reasons.append("Recovery Catch Mode (+12)")
 
     # =====================================================
     # PREVIOUS DAY BREAKOUT
@@ -504,6 +531,8 @@ def apply_strategy(df, weights):
     "breakout": breakout,
 
     "bounce": bounce,
+
+    "recovery_mode": recovery_mode,
 
     "resistance_rejection": resistance_rejection,
 
