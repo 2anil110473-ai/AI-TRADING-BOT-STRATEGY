@@ -96,7 +96,7 @@ def apply_strategy(df, weights):
     # RESISTANCE DISTANCE
     # =============================================
 
-    recent_high = df["High"].tail(20).max()
+    recent_high = df["High"].iloc[-21:-1].max()
 
     distance_from_resistance = (
         (recent_high - last["Close"])
@@ -228,9 +228,9 @@ def apply_strategy(df, weights):
     # SUPPORT / RESISTANCE
     # =====================================================
 
-    support = low.tail(20).min()
+    support = low.iloc[-21:-1].min()
 
-    resistance = high.tail(20).max()
+    resistance = high.iloc[-21:-1].max()
 
     # =====================================================
     # SUPPORT HOLDING
