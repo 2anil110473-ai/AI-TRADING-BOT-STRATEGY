@@ -116,7 +116,17 @@ def apply_strategy(df, weights):
 
     long_term_trend = False
 
-    if last["EMA20"] > last["EMA50"]:
+    ema_gap_percent = (
+    abs(last["EMA20"] - last["EMA50"])
+    / last["EMA50"]
+    ) * 100
+
+    if (
+
+        last["EMA20"] > last["EMA50"]
+        and ema_gap_percent > 0.30
+
+    ):
 
         ema_bullish = True
 
@@ -129,6 +139,12 @@ def apply_strategy(df, weights):
         ema_bearish = True
 
         reasons.append("EMA Bearish")
+
+    else:
+
+        score -= 10
+
+        reasons.append("Weak EMA Trend (-10)")
 
     # =====================================================
     # LONG TERM TREND
