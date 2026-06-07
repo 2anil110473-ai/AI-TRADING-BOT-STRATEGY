@@ -53,7 +53,7 @@ MAX_OPEN_POSITIONS = 16
 
 TARGET_PERCENT = 999
 
-STOPLOSS_PERCENT = -2
+STOPLOSS_PERCENT = -4
 
 TRAILING_STOPLOSS_PERCENT = 1.5
 
@@ -372,7 +372,7 @@ def buy_allowed():
 
     current = now.strftime("%H:%M")
 
-    return "09:15" <= current <= "15:15"
+    return "09:15" <= current <= "15:30"
 
 # =========================================================
 # DYNAMIC SCAN ENGINE
