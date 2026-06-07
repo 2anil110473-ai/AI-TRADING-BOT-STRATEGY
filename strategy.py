@@ -310,9 +310,9 @@ def apply_strategy(df, weights):
     # PREVIOUS DAY BREAKOUT
     # =====================================================
 
-    prev_high = high.iloc[-20:-1].max()
+    prev_high = high.iloc[-21:-1].max()
 
-    prev_low = low.iloc[-20:-1].min()
+    prev_low = low.iloc[-21:-1].min()
 
     if last["Close"] > prev_high:
 
