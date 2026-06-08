@@ -194,7 +194,15 @@ def apply_strategy(df, weights):
 
     near_resistance = False
 
-    if distance_from_resistance < 1.5:
+    if distance_from_resistance < 1.0:
+
+        near_resistance = True
+
+        score -= 20
+
+        reasons.append("Very Near Resistance (-20)")
+
+    elif distance_from_resistance < 1.5:
 
         near_resistance = True
 
