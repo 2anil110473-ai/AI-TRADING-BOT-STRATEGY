@@ -1285,7 +1285,7 @@ ACTIVE
 
                 if result["near_resistance"]:
 
-                required_confidence = 95
+                    required_confidence = 95
 
                 if (
 
