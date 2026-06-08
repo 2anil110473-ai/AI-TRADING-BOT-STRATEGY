@@ -1277,12 +1277,22 @@ ACTIVE
                     "LOSS_LIMIT_HIT =", LOSS_LIMIT_HIT
                 )
 
+                # ==========================================
+                # RESISTANCE PROTECTION
+                # ==========================================
+
+                required_confidence = 85
+
+                if result["near_resistance"]:
+
+                required_confidence = 95
+
                 if (
 
                     (
-                        confidence >= 85
+                        confidence >= required_confidence
                         if market_regime
-                        else confidence >= 90
+                        else confidence >= max(required_confidence, 90)
                     )
 
                     and not TARGET_REACHED
