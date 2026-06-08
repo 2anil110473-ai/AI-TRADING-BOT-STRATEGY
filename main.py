@@ -1371,10 +1371,10 @@ ACTIVE
 {chr(10).join(reasons)}
 
 🎯 TARGET:
-+3%
++999%
 
 🛑 STOPLOSS:
--2%
+-4%
 
 🛡 TRAILING STOPLOSS:
 ACTIVE
