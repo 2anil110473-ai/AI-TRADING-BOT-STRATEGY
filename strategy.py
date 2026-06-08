@@ -381,6 +381,16 @@ def apply_strategy(df, weights):
 
         reasons.append("Previous Low Breakdown (-10)")
 
+    # =============================================
+    # EARLY BREAKOUT BONUS
+    # =============================================
+
+    if breakout and volume_spike:
+
+        score += 10
+
+        reasons.append("Early Breakout Volume Confirmation (+10)")
+
     # =====================================================
     # CONSOLIDATION BREAKOUT
     # =====================================================
