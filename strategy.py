@@ -192,7 +192,11 @@ def apply_strategy(df, weights):
     # RESISTANCE FILTER
     # =============================================
 
+    near_resistance = False
+
     if distance_from_resistance < 1.5:
+
+        near_resistance = True
 
         score -= 15
 
@@ -515,6 +519,8 @@ def apply_strategy(df, weights):
     "support": float(support),
 
     "resistance": float(resistance),
+
+    "near_resistance": near_resistance,
 
     "vwap": float(last["VWAP"]),
 
