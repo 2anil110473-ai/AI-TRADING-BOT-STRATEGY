@@ -289,12 +289,6 @@ def apply_strategy(df, weights):
 
         reasons.append(f"Resistance Breakout (+{weights['BREAKOUT']})")
 
-    if breakout and volume_spike:
-
-        score += 10
-
-        reasons.append("Volume Confirmed Breakout (+10)")
-
     # =====================================================
     # RESISTANCE REJECTION
     # =====================================================
@@ -369,7 +363,12 @@ def apply_strategy(df, weights):
 
     prev_low = low.iloc[-21:-1].min()
 
-    if last["Close"] > prev_high:
+    if (
+
+        last["Close"] > prev_high
+        and not breakout
+
+    ):
 
         score += 10
 
