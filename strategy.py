@@ -271,6 +271,33 @@ def apply_strategy(df, weights):
         reasons.append(f"Support Holding (+{weights['SUPPORT']})")
 
     # =====================================================
+    # PRE BREAKOUT SETUP
+    # =====================================================
+
+    distance_to_breakout = (
+        (resistance - last["Close"])
+        / last["Close"]
+    ) * 100
+
+    pre_breakout = False
+
+    if (
+
+        distance_to_breakout < 0.50
+        and distance_to_breakout > 0
+        and volume_spike
+        and ema_bullish
+        and long_term_trend
+
+    ):
+
+        pre_breakout = True
+
+        score += 15
+
+        reasons.append("Pre Breakout Setup (+15)")
+
+    # =====================================================
     # RESISTANCE BREAKOUT
     # =====================================================
 
@@ -343,7 +370,7 @@ def apply_strategy(df, weights):
 
     if (
 
-        recovery_percent > 1.5
+        recovery_percent > 0.75
         and last["RSI"] > 45
         and last["Close"] > last["VWAP"]
 
@@ -552,6 +579,8 @@ def apply_strategy(df, weights):
     "volume_spike": volume_spike,
 
     "breakout": breakout,
+
+    "pre_breakout": pre_breakout,
 
     "bounce": bounce,
 
