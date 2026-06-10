@@ -244,7 +244,7 @@ def apply_strategy(df, weights):
 
     avg_volume = volume.tail(20).mean()
 
-    volume_spike = last["Volume"] > (avg_volume * 1.8)
+    volume_spike = last["Volume"] > (avg_volume * 1.3)
 
     if volume_spike:
 
@@ -370,8 +370,7 @@ def apply_strategy(df, weights):
 
     if (
 
-        recovery_percent > 0.75
-        and last["RSI"] > 45
+        recovery_percent > 0.30
         and last["Close"] > last["VWAP"]
 
     ):
@@ -381,6 +380,29 @@ def apply_strategy(df, weights):
         score += 12
 
         reasons.append("Recovery Catch Mode (+12)")
+
+    # =====================================================
+    # MOMENTUM EXPANSION
+    # =====================================================
+
+    momentum_move = (
+        (last["Close"] - low.tail(5).min())
+        / low.tail(5).min()
+    ) * 100
+
+    if (
+
+        momentum_move > 1.0
+
+        and last["Close"] > last["VWAP"]
+
+        and last["MACD"] > last["MACD_SIGNAL"]
+
+    ):
+
+        score += 15
+
+        reasons.append("Momentum Expansion (+15)")
 
     # =====================================================
     # PREVIOUS DAY BREAKOUT
@@ -406,6 +428,18 @@ def apply_strategy(df, weights):
         score -= 10
 
         reasons.append("Previous Low Breakdown (-10)")
+
+    # =====================================================
+    # FRESH HIGH BREAKOUT
+    # =====================================================
+
+    last_5_high = high.iloc[-6:-1].max()
+
+    if last["Close"] > last_5_high:
+
+        score += 10
+
+        reasons.append("Fresh High Breakout (+10)")
 
     # =============================================
     # EARLY BREAKOUT BONUS
