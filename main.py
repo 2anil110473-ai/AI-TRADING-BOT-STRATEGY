@@ -1034,6 +1034,17 @@ ACTIVE
 
                         exit_reason = "VWAP BREAKDOWN"
 
+                    # =============================================
+                    # PROFIT PROTECTION
+                    # =============================================
+
+                    elif profit_percent > 0.80:
+
+                        stop_price = highest_price * 0.997
+
+                        if price <= stop_price:
+
+                            exit_reason = "PROFIT PROTECTION"
 
                     # =============================================
                     # MARKET CRASH SAFETY EXIT
