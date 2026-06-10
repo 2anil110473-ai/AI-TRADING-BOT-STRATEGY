@@ -1038,9 +1038,9 @@ ACTIVE
                     # PROFIT PROTECTION
                     # =============================================
 
-                    elif profit_percent > 0.80:
+                    elif pnl_percent > 0.80:
 
-                        stop_price = highest_price * 0.997
+                        stop_price = highest * 0.997
 
                         if price <= stop_price:
 
