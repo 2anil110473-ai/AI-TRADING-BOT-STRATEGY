@@ -985,16 +985,16 @@ ACTIVE
                         exit_reason = "TRAILING STOPLOSS HIT"
 
                     # =============================================
-                    # PROFIT PROTECTION
+                    # ₹1000 GUARANTEED PROFIT LOCK
                     # =============================================
 
-                    elif pnl_percent > 1.20:
+                    elif pnl_amount >= 1000:
 
-                        stop_price = highest * 0.992
+                        guaranteed_price = bp + 10
 
-                        if price <= stop_price:
+                        if price <= guaranteed_price:
 
-                            exit_reason = "PROFIT PROTECTION"
+                          exit_reason = "₹1000 GUARANTEED PROFIT"
 
                     # =============================================
                     # RESISTANCE REJECTION EXIT
