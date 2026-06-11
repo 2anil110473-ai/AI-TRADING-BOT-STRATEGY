@@ -985,6 +985,18 @@ ACTIVE
                         exit_reason = "TRAILING STOPLOSS HIT"
 
                     # =============================================
+                    # PROFIT PROTECTION
+                    # =============================================
+
+                    elif pnl_percent > 1.20:
+
+                        stop_price = highest * 0.992
+
+                        if price <= stop_price:
+
+                            exit_reason = "PROFIT PROTECTION"
+
+                    # =============================================
                     # RESISTANCE REJECTION EXIT
                     # =============================================
 
@@ -1033,18 +1045,6 @@ ACTIVE
                     ):
 
                         exit_reason = "VWAP BREAKDOWN"
-
-                    # =============================================
-                    # PROFIT PROTECTION
-                    # =============================================
-
-                    elif pnl_percent > 0.80:
-
-                        stop_price = highest * 0.997
-
-                        if price <= stop_price:
-
-                            exit_reason = "PROFIT PROTECTION"
 
                     # =============================================
                     # MARKET CRASH SAFETY EXIT
