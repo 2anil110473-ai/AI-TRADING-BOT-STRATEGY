@@ -239,6 +239,26 @@ def apply_strategy(df, weights):
         reasons.append("Below VWAP")
 
     # =====================================================
+    # EARLY MOMENTUM ENTRY
+    # =====================================================
+
+    if (
+
+        last["Close"] > last["VWAP"]
+
+        and last["MACD"] > last["MACD_SIGNAL"]
+
+        and volume_spike
+
+    ):
+
+        score += 20
+
+        reasons.append(
+            "Early Momentum Entry (+20)"
+        )
+
+    # =====================================================
     # VOLUME SPIKE ENGINE
     # =====================================================
 
@@ -440,6 +460,24 @@ def apply_strategy(df, weights):
         score += 10
 
         reasons.append("Fresh High Breakout (+10)")
+
+    # =====================================================
+    # OPENING RANGE BREAKOUT
+    # =====================================================
+
+    opening_high = high.tail(15).max()
+
+    if (
+
+        last["Close"] > opening_high
+
+        and volume_spike
+
+    ):
+
+        score += 15
+
+        reasons.append("Opening Range Breakout (+15)")
 
     # =============================================
     # EARLY BREAKOUT BONUS
