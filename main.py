@@ -1309,6 +1309,13 @@ ACTIVE
                     required_confidence = 90
 
                 # ==========================================
+                # FALSE BREAKOUT BLOCK
+                # ==========================================
+
+                if "FALSE BREAKOUT BLOCKED" in reasons:
+                    continue
+
+                # ==========================================
                 # BUY CONDITION
                 # ==========================================
 
