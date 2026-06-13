@@ -1304,7 +1304,13 @@ ACTIVE
 
                 required_confidence = 85
 
-                if result["near_resistance"]:
+                if (
+
+                    result["near_resistance"]
+
+                    and not result["breakout"]
+
+                ):
 
                     required_confidence = 90
 
