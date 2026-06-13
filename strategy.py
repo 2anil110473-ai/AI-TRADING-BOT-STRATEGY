@@ -531,9 +531,27 @@ def apply_strategy(df, weights):
 
     ):
 
-        score -= 25
+        return {
 
-        reasons.append("False Breakout Risk")
+            "score": 0,
+
+            "reasons": ["FALSE BREAKOUT BLOCKED"],
+
+            "signals": {},
+
+            "atr": float(last["ATR"]),
+
+            "atr_percent": float(atr_percent),
+
+            "support": float(support),
+
+            "resistance": float(resistance),
+
+            "near_resistance": near_resistance,
+
+            "breakout": False
+
+        }
 
     # =====================================================
     # ATR VOLATILITY FILTER
