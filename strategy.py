@@ -541,7 +541,7 @@ def apply_strategy(df, weights):
 
             "atr": float(last["ATR"]),
 
-            "atr_percent": float(atr_percent),
+            "atr_percent": 0,
 
             "support": float(support),
 
