@@ -549,7 +549,15 @@ def apply_strategy(df, weights):
 
             "near_resistance": near_resistance,
 
-            "breakout": False
+            "breakout": False,
+
+            "institutional_risk": False,
+
+            "ema_bearish": False,
+
+            "long_term_trend": False,
+
+            "volume_spike": False
 
         }
 
