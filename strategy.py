@@ -554,6 +554,24 @@ def apply_strategy(df, weights):
         }
 
     # =====================================================
+    # INSTITUTIONAL RISK FILTER
+    # =====================================================
+
+    institutional_risk = False
+
+    if (
+
+        not long_term_trend
+
+        and near_resistance
+
+    ):
+
+        institutional_risk = True
+
+        reasons.append("Institutional Risk")
+
+    # =====================================================
     # ATR VOLATILITY FILTER
     # =====================================================
 
@@ -676,6 +694,8 @@ def apply_strategy(df, weights):
 
     "resistance_rejection": resistance_rejection,
 
-    "long_term_trend": long_term_trend
+    "long_term_trend": long_term_trend,
+
+    "institutional_risk": institutional_risk
 
 }
